@@ -1,0 +1,467 @@
+<title>Lustro — Análise Gratuita</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<style>
+  :root {
+    --bg: #070809;
+    --surface: #101113;
+    --surface-hi: #17181B;
+    --line: #232529;
+    --red: #D81F26;
+    --red-hi: #E8353B;
+    --red-deep: #8E1015;
+    --text: #FFFFFF;
+    --muted: #9B979A;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(900px 500px at 85% -10%, rgba(216,31,38,.10), transparent 60%),
+      radial-gradient(700px 420px at 0% 110%, rgba(216,31,38,.06), transparent 55%),
+      var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+    flex-direction: column;
+    min-height: 100dvh;
+  }
+
+  .progress {
+    position: fixed; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--line); z-index: 10;
+  }
+  .progress__bar {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, var(--red-deep), var(--red-hi));
+    transition: width .35s ease;
+  }
+
+  header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 24px 24px 8px;
+    width: 100%; max-width: 640px; margin: 0 auto;
+  }
+  header .wordmark {
+    font-size: 14px; font-weight: 800; letter-spacing: .32em;
+    text-transform: uppercase;
+  }
+
+  main {
+    flex: 1; display: flex; flex-direction: column; justify-content: center;
+    width: 100%; max-width: 640px; margin: 0 auto; padding: 12px 24px 28px;
+  }
+
+  .step { display: none; }
+  .step.active { display: block; animation: rise .32s ease both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    .step.active { animation: none; }
+    .progress__bar { transition: none; }
+  }
+
+  h1 {
+    font-size: clamp(23px, 5.6vw, 30px); font-weight: 800;
+    line-height: 1.22; letter-spacing: -.015em; text-wrap: balance;
+    margin: 0 0 10px;
+  }
+  h1 em { font-style: normal; color: var(--red-hi); }
+  .desc { color: var(--muted); font-size: 16px; line-height: 1.55; margin: 0 0 28px; }
+  .desc strong { color: var(--text); }
+
+  /* welcome */
+  .welcome h1 { font-size: clamp(26px, 6.4vw, 36px); }
+  .welcome .logo-big { margin-bottom: 26px; }
+
+  input[type="text"], input[type="tel"] {
+    width: 100%; padding: 16px 18px; font-size: 18px;
+    color: var(--text); background: var(--surface);
+    border: 1px solid var(--line); border-radius: var(--radius);
+    outline: none; caret-color: var(--red-hi);
+  }
+  input:focus { border-color: var(--red); box-shadow: 0 0 0 3px rgba(216,31,38,.18); }
+  input::placeholder { color: #55525A; }
+
+  .options { display: flex; flex-direction: column; gap: 10px; }
+  .opt {
+    display: flex; align-items: center; gap: 13px; width: 100%;
+    padding: 14px 15px; font-size: 16.5px; font-weight: 500; text-align: left;
+    color: var(--text); background: var(--surface);
+    border: 1px solid var(--line); border-radius: var(--radius);
+    cursor: pointer; transition: border-color .15s, background .15s;
+    font-variant-numeric: tabular-nums;
+  }
+  .opt:hover { background: var(--surface-hi); border-color: #34363C; }
+  .opt:focus-visible, .btn:focus-visible {
+    outline: 2px solid var(--red-hi); outline-offset: 2px;
+  }
+  .opt.selected { border-color: var(--red); background: rgba(216,31,38,.08); }
+  .opt .key {
+    flex: 0 0 26px; height: 26px; border-radius: 6px;
+    display: grid; place-items: center;
+    font-size: 13px; font-weight: 700; color: var(--muted);
+    border: 1px solid var(--line); background: var(--bg);
+  }
+  .opt.selected .key { color: #fff; background: var(--red); border-color: var(--red); }
+
+  .nav { display: flex; align-items: center; gap: 14px; margin-top: 26px; }
+  .btn {
+    appearance: none; border: 0; cursor: pointer;
+    padding: 15px 30px; font-size: 16.5px; font-weight: 700;
+    border-radius: var(--radius); color: #fff;
+    background: linear-gradient(135deg, var(--red-hi), var(--red-deep));
+    box-shadow: 0 6px 24px rgba(216,31,38,.30);
+  }
+  .btn--big { padding: 17px 34px; font-size: 17.5px; }
+  .btn--ghost {
+    background: none; box-shadow: none; color: var(--muted);
+    padding: 15px 10px; font-weight: 600;
+  }
+  .btn--ghost:hover { color: var(--text); }
+  .btn--wa { width: 100%; padding: 17px; font-size: 17px; }
+  .btn:disabled { opacity: .35; cursor: not-allowed; box-shadow: none; }
+  .enter-hint { font-size: 13px; color: #55525A; }
+  .required-tag { font-size: 13px; font-weight: 600; color: var(--red-hi); letter-spacing: .04em; margin: 0 0 8px; }
+
+  .error { color: var(--red-hi); font-size: 14px; margin: 10px 2px 0; display: none; }
+  .error.show { display: block; }
+
+  footer {
+    text-align: center; padding: 14px 20px 22px;
+    font-size: 11.5px; letter-spacing: .08em; color: #4A474D;
+    text-transform: uppercase;
+  }
+
+  .done { text-align: center; }
+  .done .logo-big { margin: 0 auto 22px; }
+</style>
+
+<div class="progress"><div class="progress__bar" id="bar"></div></div>
+
+<header>
+  <svg width="30" height="30" viewBox="0 0 100 100" aria-hidden="true">
+    <defs>
+      <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#E8353B"/>
+        <stop offset="1" stop-color="#8E1015"/>
+      </linearGradient>
+    </defs>
+    <circle cx="50" cy="50" r="50" fill="#101113"/>
+    <path d="M36 22 L52 32 L52 62 L36 74 Z" fill="url(#lg)"/>
+    <path d="M40 78 L52 66 L78 62 L70 74 Z" fill="url(#lg)"/>
+  </svg>
+  <span class="wordmark">Lustro</span>
+</header>
+
+<main>
+  <!-- 0. Boas-vindas -->
+  <section class="step active welcome" data-step>
+    <svg class="logo-big" width="64" height="64" viewBox="0 0 100 100" aria-hidden="true">
+      <circle cx="50" cy="50" r="50" fill="#101113"/>
+      <path d="M36 22 L52 32 L52 62 L36 74 Z" fill="url(#lg)"/>
+      <path d="M40 78 L52 66 L78 62 L70 74 Z" fill="url(#lg)"/>
+    </svg>
+    <h1>Preencha e receba uma <em>análise gratuita</em> da metodologia que faz estéticas automotivas venderem vitrificação e PPF todos os dias, com tráfego pago + IA</h1>
+    <p class="desc">Leva menos de <strong>1 minuto</strong>. Se o seu negócio se qualificar, nosso time te chama no WhatsApp pra traçar o plano.</p>
+    <div class="nav">
+      <button class="btn btn--big" data-next>Começar</button>
+      <span class="enter-hint">pressione Enter ↵</span>
+    </div>
+  </section>
+
+  <!-- 1. Compromisso -->
+  <section class="step" data-step data-question="Comprometido com reunião em 48h?">
+    <h1>Você está comprometido(a) a fazer uma reunião de análise com o nosso time nas próximas 48 horas?</h1>
+    <p class="desc">A análise é gratuita, mas a agenda é limitada — só avançe se você for aparecer.</p>
+    <div class="options" role="radiogroup">
+      <button class="opt"><span class="key">A</span>✅ Sim, e eu quero prosseguir</button>
+      <button class="opt" data-disqualify><span class="key">B</span>❌ Não é pra mim</button>
+    </div>
+  </section>
+
+  <!-- 2. Nome -->
+  <section class="step" data-step>
+    <h1>Qual é o seu nome?</h1>
+    <input type="text" id="nome" placeholder="Digite sua resposta aqui..." autocomplete="name" enterkeyhint="next">
+    <p class="error" id="err-nome">Digite seu nome pra continuar.</p>
+    <div class="nav">
+      <button class="btn" data-next>OK</button>
+      <span class="enter-hint">pressione Enter ↵</span>
+    </div>
+  </section>
+
+  <!-- 3. WhatsApp -->
+  <section class="step" data-step>
+    <h1 data-name-q>Qual seu telefone com WhatsApp?</h1>
+    <input type="tel" id="whats" placeholder="(00) 00000-0000" inputmode="numeric" autocomplete="tel" enterkeyhint="next">
+    <p class="error" id="err-whats">Digite um número válido com DDD.</p>
+    <div class="nav">
+      <button class="btn" data-next>OK</button>
+      <span class="enter-hint">pressione Enter ↵</span>
+    </div>
+  </section>
+
+  <!-- 4. Instagram -->
+  <section class="step" data-step>
+    <h1><span data-name></span>, qual o Instagram da sua estética?</h1>
+    <p class="desc">@.......</p>
+    <input type="text" id="insta" placeholder="@suaestetica" autocapitalize="none" enterkeyhint="next">
+    <p class="error" id="err-insta">Digite o @ da sua estética.</p>
+    <div class="nav">
+      <button class="btn" data-next>OK</button>
+      <span class="enter-hint">pressione Enter ↵</span>
+    </div>
+  </section>
+
+  <!-- Qualificação (ordem aleatória) -->
+  <section class="step" data-step data-question="Carros atendidos por mês" data-random>
+    <h1>Quantos carros você atende por mês, em média?</h1>
+    <div class="options" role="radiogroup">
+      <button class="opt"><span class="key">A</span>Até 20</button>
+      <button class="opt"><span class="key">B</span>De 20 a 50</button>
+      <button class="opt"><span class="key">C</span>De 50 a 100</button>
+      <button class="opt"><span class="key">D</span>Mais de 100</button>
+    </div>
+  </section>
+
+  <section class="step" data-step data-question="Já vende vitrificação e PPF?" data-random>
+    <h1>Você já vende vitrificação e PPF?</h1>
+    <div class="options" role="radiogroup">
+      <button class="opt"><span class="key">A</span>Sim, são meus principais serviços</button>
+      <button class="opt"><span class="key">B</span>Faço, mas vende pouco</button>
+      <button class="opt"><span class="key">C</span>Faço só vitrificação, PPF ainda não</button>
+      <button class="opt"><span class="key">D</span>Ainda não faço nenhum dos dois</button>
+    </div>
+  </section>
+
+  <section class="step" data-step data-question="Já investiu em tráfego pago e IA?" data-random>
+    <h1>Você já investiu em tráfego pago e inteligência artificial?</h1>
+    <div class="options" role="radiogroup">
+      <button class="opt"><span class="key">A</span>Sim, tráfego e IA</button>
+      <button class="opt"><span class="key">B</span>Só tráfego pago, IA ainda não</button>
+      <button class="opt"><span class="key">C</span>Já tentei tráfego, mas não deu certo</button>
+      <button class="opt"><span class="key">D</span>Nunca investi, vivo de indicação</button>
+    </div>
+  </section>
+
+  <section class="step" data-step data-question="Faturamento mensal" data-random>
+    <h1><span data-name></span>, qual o faturamento médio da sua estética automotiva por mês?</h1>
+    <p class="desc">Vamos direcionar a melhor solução estratégica para o momento atual do seu negócio.</p>
+    <div class="options" role="radiogroup">
+      <button class="opt"><span class="key">A</span>Até R$10 mil</button>
+      <button class="opt"><span class="key">B</span>De R$10 mil a R$30 mil</button>
+      <button class="opt"><span class="key">C</span>De R$30 mil a R$60 mil</button>
+      <button class="opt"><span class="key">D</span>De R$60 mil a R$100 mil</button>
+      <button class="opt"><span class="key">E</span>Acima de R$100 mil</button>
+    </div>
+  </section>
+
+  <!-- Final -->
+  <section class="step done" data-step>
+    <svg class="logo-big" width="68" height="68" viewBox="0 0 100 100" aria-hidden="true">
+      <circle cx="50" cy="50" r="50" fill="#101113"/>
+      <path d="M36 22 L52 32 L52 62 L36 74 Z" fill="url(#lg)"/>
+      <path d="M40 78 L52 66 L78 62 L70 74 Z" fill="url(#lg)"/>
+    </svg>
+    <h1 id="done-title">Obrigado por participar!</h1>
+    <p class="desc">Toque no botão abaixo pra confirmar suas respostas. <strong>Em até 10 minutos</strong> nosso time fala com você no WhatsApp pra alinhar os próximos passos.</p>
+    <button class="btn btn--wa" id="send">Confirmar no WhatsApp</button>
+  </section>
+
+  <!-- Desqualificado -->
+  <section class="step done" data-step id="no-fit" hidden>
+    <h1>Sem problemas!</h1>
+    <p class="desc">Quando fizer sentido pra você, é só voltar aqui. Boa sorte com a sua estética.</p>
+  </section>
+</main>
+
+<footer>Lustro · Estética Automotiva</footer>
+
+<script>
+  // ============ CONFIGURAÇÃO ============
+  // Número que RECEBE os leads (DDI + DDD + número, só dígitos):
+  var WHATSAPP_DESTINO = "5581984269001"; // TROCAR pelo número da Lustro
+  // Opcional: webhook (Make/Zapier/Supabase) pra registrar o lead:
+  var WEBHOOK_URL = ""; // deixe vazio pra desativar
+  // ======================================
+
+  // Perguntas de qualificação [data-random] em ordem aleatória a cada visita.
+  (function shuffleQuestions() {
+    var randomizable = Array.prototype.slice.call(document.querySelectorAll(".step[data-random]"));
+    var anchor = randomizable[randomizable.length - 1].nextElementSibling;
+    var parent = anchor.parentNode;
+    for (var i = randomizable.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = randomizable[i]; randomizable[i] = randomizable[j]; randomizable[j] = tmp;
+    }
+    randomizable.forEach(function (sec) { parent.insertBefore(sec, anchor); });
+  })();
+
+  var steps = Array.prototype.slice.call(document.querySelectorAll(".step")).filter(function (s) {
+    return s.id !== "no-fit";
+  });
+
+  // marca visualmente toda pergunta como obrigatória
+  steps.forEach(function (sec) {
+    if (sec.querySelector("input") || sec.querySelector(".options")) {
+      var tag = document.createElement("p");
+      tag.className = "required-tag";
+      tag.textContent = "* Resposta obrigatória";
+      sec.insertBefore(tag, sec.firstElementChild);
+    }
+  });
+  var noFit = document.getElementById("no-fit");
+  var bar = document.getElementById("bar");
+  var current = 0;
+  var answers = {};
+
+  function show(i) {
+    steps[current].classList.remove("active");
+    current = i;
+    steps[current].classList.add("active");
+    bar.style.width = (current / (steps.length - 1) * 100) + "%";
+    // personaliza perguntas com o nome
+    var nome = (answers["Nome"] || "").split(" ")[0];
+    steps[current].querySelectorAll("[data-name]").forEach(function (el) { el.textContent = nome; });
+    if (current === steps.length - 1 && nome) {
+      document.getElementById("done-title").textContent = "Obrigado, " + nome + "!";
+    }
+    var input = steps[current].querySelector("input");
+    if (input) setTimeout(function () { input.focus(); }, 80);
+    window.scrollTo(0, 0);
+  }
+
+  // máscara de telefone BR
+  var whats = document.getElementById("whats");
+  whats.addEventListener("input", function () {
+    var d = this.value.replace(/\D/g, "").slice(0, 11);
+    var out = "";
+    if (d.length > 0) out = "(" + d.slice(0, 2);
+    if (d.length >= 3) out += ") " + d.slice(2, d.length >= 8 ? 7 : d.length);
+    if (d.length >= 8) out += "-" + d.slice(7);
+    this.value = out;
+  });
+
+  function stepError(sec, on) {
+    var err = sec.querySelector(".error");
+    if (err) err.classList.toggle("show", on);
+  }
+
+  // validação em tempo real: OK só habilita com o campo válido
+  function inputIsValid(input) {
+    if (input.id === "nome") return input.value.trim().length >= 2;
+    if (input.id === "whats") return input.value.replace(/\D/g, "").length >= 10;
+    if (input.id === "insta") return input.value.trim().replace(/^@/, "").length >= 2;
+    return true;
+  }
+  Array.prototype.slice.call(document.querySelectorAll(".step input")).forEach(function (input) {
+    var btn = input.closest(".step").querySelector("[data-next]");
+    if (!btn) return;
+    btn.disabled = !inputIsValid(input);
+    input.addEventListener("input", function () {
+      btn.disabled = !inputIsValid(input);
+      if (inputIsValid(input)) stepError(input.closest(".step"), false);
+    });
+  });
+
+  function validate() {
+    var sec = steps[current];
+    var input = sec.querySelector("input");
+    if (!input) return true;
+    if (input.id === "nome") {
+      var ok = input.value.trim().length >= 2;
+      stepError(sec, !ok);
+      if (ok) answers["Nome"] = input.value.trim();
+      return ok;
+    }
+    if (input.id === "whats") {
+      var ok2 = input.value.replace(/\D/g, "").length >= 10;
+      stepError(sec, !ok2);
+      if (ok2) answers["WhatsApp"] = input.value;
+      return ok2;
+    }
+    if (input.id === "insta") {
+      var v = input.value.trim().replace(/^@?/, "@");
+      var ok3 = v.replace(/^@/, "").length >= 2;
+      stepError(sec, !ok3);
+      if (ok3) answers["Instagram"] = v;
+      return ok3;
+    }
+    return true;
+  }
+
+  document.addEventListener("click", function (e) {
+    if (e.target.closest("[data-next]")) {
+      if (validate()) show(current + 1);
+    }
+
+    var opt = e.target.closest(".opt");
+    if (opt) {
+      var step = opt.closest(".step");
+      step.querySelectorAll(".opt").forEach(function (o) { o.classList.remove("selected"); });
+      opt.classList.add("selected");
+      answers[step.getAttribute("data-question")] = opt.textContent.replace(/^[A-E]/, "").trim();
+      if (opt.hasAttribute("data-disqualify")) {
+        setTimeout(function () {
+          steps[current].classList.remove("active");
+          noFit.hidden = false;
+          noFit.classList.add("active");
+          bar.style.width = "100%";
+        }, 250);
+        return;
+      }
+      setTimeout(function () { show(current + 1); }, 250);
+    }
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      var sec = steps[current];
+      if (sec.querySelector("[data-next]")) {
+        e.preventDefault();
+        if (validate()) show(current + 1);
+      }
+    }
+  });
+
+  document.getElementById("send").addEventListener("click", function () {
+    // trava: só envia com TODAS as respostas preenchidas
+    var required = ["Nome", "WhatsApp", "Instagram"];
+    steps.forEach(function (sec) {
+      var q = sec.getAttribute("data-question");
+      if (q) required.push(q);
+    });
+    for (var r = 0; r < required.length; r++) {
+      if (!answers[required[r]]) {
+        var target = steps.findIndex(function (sec) {
+          if (sec.getAttribute("data-question") === required[r]) return true;
+          var inp = sec.querySelector("input");
+          if (!inp) return false;
+          return { nome: "Nome", whats: "WhatsApp", insta: "Instagram" }[inp.id] === required[r];
+        });
+        if (target >= 0) { show(target); stepError(steps[target], true); }
+        return;
+      }
+    }
+
+    var lines = ["*Novo lead — Formulário Lustro*", ""];
+    Object.keys(answers).forEach(function (k) {
+      lines.push("*" + k + ":* " + answers[k]);
+    });
+    var msg = lines.join("\n");
+
+    if (WEBHOOK_URL) {
+      try {
+        fetch(WEBHOOK_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(answers)
+        });
+      } catch (err) { /* webhook é best-effort */ }
+    }
+
+    window.location.href = "https://wa.me/" + WHATSAPP_DESTINO + "?text=" + encodeURIComponent(msg);
+  });
+</script>
