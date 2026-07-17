@@ -266,8 +266,7 @@
       <path d="M40 78 L52 66 L78 62 L70 74 Z" fill="url(#lg)"/>
     </svg>
     <h1 id="done-title">Obrigado por participar!</h1>
-    <p class="desc">Toque no botão abaixo pra confirmar suas respostas. <strong>Em até 10 minutos</strong> nosso time fala com você no WhatsApp pra alinhar os próximos passos.</p>
-    <button class="btn btn--wa" id="send">Confirmar no WhatsApp</button>
+    <p class="desc">Suas respostas foram registradas. <strong>Em até 10 minutos</strong> nosso time fala com você no WhatsApp pra alinhar os próximos passos.</p>
   </section>
 
   <!-- Desqualificado -->
@@ -281,10 +280,9 @@
 
 <script>
   // ============ CONFIGURAÇÃO ============
-  // Número que RECEBE os leads (DDI + DDD + número, só dígitos):
-  var WHATSAPP_DESTINO = "5581984269001"; // TROCAR pelo número da Lustro
-  // Opcional: webhook (Make/Zapier/Supabase) pra registrar o lead:
-  var WEBHOOK_URL = ""; // deixe vazio pra desativar
+  // Webhook (Make/Zapier/Supabase) que RECEBE os leads ao final do formulário.
+  // OBRIGATÓRIO configurar antes de rodar tráfego — sem isso os leads NÃO são registrados.
+  var WEBHOOK_URL = "";
   // ======================================
 
   // Perguntas de qualificação [data-random] em ordem aleatória a cada visita.
@@ -325,8 +323,9 @@
     // personaliza perguntas com o nome
     var nome = (answers["Nome"] || "").split(" ")[0];
     steps[current].querySelectorAll("[data-name]").forEach(function (el) { el.textContent = nome; });
-    if (current === steps.length - 1 && nome) {
-      document.getElementById("done-title").textContent = "Obrigado, " + nome + "!";
+    if (current === steps.length - 1) {
+      if (nome) document.getElementById("done-title").textContent = "Obrigado, " + nome + "!";
+      submitLead();
     }
     var input = steps[current].querySelector("input");
     if (input) setTimeout(function () { input.focus(); }, 80);
@@ -426,8 +425,11 @@
     }
   });
 
-  document.getElementById("send").addEventListener("click", function () {
-    // trava: só envia com TODAS as respostas preenchidas
+  // ao chegar na tela de obrigado, registra o lead no webhook automaticamente
+  var leadSent = false;
+  function submitLead() {
+    if (leadSent) return;
+    // só envia com TODAS as respostas preenchidas
     var required = ["Nome", "WhatsApp", "Instagram"];
     steps.forEach(function (sec) {
       var q = sec.getAttribute("data-question");
@@ -445,13 +447,7 @@
         return;
       }
     }
-
-    var lines = ["*Novo lead — Formulário Lustro*", ""];
-    Object.keys(answers).forEach(function (k) {
-      lines.push("*" + k + ":* " + answers[k]);
-    });
-    var msg = lines.join("\n");
-
+    leadSent = true;
     if (WEBHOOK_URL) {
       try {
         fetch(WEBHOOK_URL, {
@@ -461,7 +457,5 @@
         });
       } catch (err) { /* webhook é best-effort */ }
     }
-
-    window.location.href = "https://wa.me/" + WHATSAPP_DESTINO + "?text=" + encodeURIComponent(msg);
-  });
+  }
 </script>
