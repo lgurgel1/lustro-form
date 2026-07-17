@@ -1,4 +1,4 @@
-<title>Lustro — Análise Gratuita</title>
+<title>Lustro | Análise Gratuita</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <style>
   :root {
@@ -106,7 +106,7 @@
   }
   .opt.selected .key { color: #fff; background: var(--red); border-color: var(--red); }
 
-  .nav { display: flex; align-items: center; gap: 14px; margin-top: 26px; }
+  .nav { display: flex; align-items: center; gap: 14px; margin-top: 26px; flex-wrap: wrap; }
   .btn {
     appearance: none; border: 0; cursor: pointer;
     padding: 15px 30px; font-size: 16.5px; font-weight: 700;
@@ -136,6 +136,27 @@
 
   .done { text-align: center; }
   .done .logo-big { margin: 0 auto 22px; }
+
+  .btn, .opt { -webkit-tap-highlight-color: transparent; }
+
+  /* esconde a dica de "Enter" em dispositivos de toque (celular) */
+  @media (hover: none) and (pointer: coarse) {
+    .enter-hint { display: none; }
+  }
+
+  /* ajustes finos para mobile — a maioria acessa por aqui */
+  @media (max-width: 480px) {
+    header { padding: 18px 20px 6px; }
+    main { padding: 8px 20px calc(24px + env(safe-area-inset-bottom)); }
+    h1 { line-height: 1.25; }
+    .desc { font-size: 15.5px; }
+    .nav { gap: 10px; margin-top: 22px; }
+    .nav .btn:not(.btn--ghost) { flex: 1 1 auto; }
+    .btn { padding: 16px 22px; }
+    .btn--big { padding: 17px 22px; width: 100%; }
+    .opt { padding: 15px; font-size: 16px; }
+    footer { padding-bottom: calc(22px + env(safe-area-inset-bottom)); }
+  }
 </style>
 
 <div class="progress"><div class="progress__bar" id="bar"></div></div>
@@ -163,8 +184,8 @@
       <path d="M36 22 L52 32 L52 62 L36 74 Z" fill="url(#lg)"/>
       <path d="M40 78 L52 66 L78 62 L70 74 Z" fill="url(#lg)"/>
     </svg>
-    <h1>Preencha e receba uma <em>análise gratuita</em> da metodologia que faz estéticas automotivas venderem vitrificação e PPF todos os dias, com tráfego pago + IA</h1>
-    <p class="desc">Leva menos de <strong>1 minuto</strong>. Se o seu negócio se qualificar, nosso time te chama no WhatsApp pra traçar o plano.</p>
+    <h1>Preencha e receba uma <em>análise gratuita</em> da metodologia Alto Brilho, que enche a agenda de estéticas automotivas com serviços caros e lucrativos.</h1>
+    <p class="desc">Leva menos de <strong>1 minuto</strong>. Em até <strong>5 minutos</strong>, um dos nossos especialistas entrará em contato diretamente para agendar a reunião com você.</p>
     <div class="nav">
       <button class="btn btn--big" data-next>Começar</button>
       <span class="enter-hint">pressione Enter ↵</span>
@@ -172,9 +193,9 @@
   </section>
 
   <!-- 1. Compromisso -->
-  <section class="step" data-step data-question="Comprometido com reunião em 48h?">
-    <h1>Você está comprometido(a) a fazer uma reunião de análise com o nosso time nas próximas 48 horas?</h1>
-    <p class="desc">A análise é gratuita, mas a agenda é limitada — só avançe se você for aparecer.</p>
+  <section class="step" data-step data-question="Comprometido com reunião em 24h?">
+    <h1>Você está comprometido(a) a fazer uma reunião de análise com um dos nossos especialistas nas próximas 24 horas?</h1>
+    <p class="desc">A análise é gratuita, mas a agenda é limitada, só avance se você for aparecer.</p>
     <div class="options" role="radiogroup">
       <button class="opt"><span class="key">A</span>✅ Sim, e eu quero prosseguir</button>
       <button class="opt" data-disqualify><span class="key">B</span>❌ Não é pra mim</button>
@@ -266,7 +287,7 @@
       <path d="M40 78 L52 66 L78 62 L70 74 Z" fill="url(#lg)"/>
     </svg>
     <h1 id="done-title">Obrigado por participar!</h1>
-    <p class="desc">Suas respostas foram registradas. <strong>Em até 10 minutos</strong> nosso time fala com você no WhatsApp pra alinhar os próximos passos.</p>
+    <p class="desc">Suas respostas foram registradas. Em até <strong>5 minutos</strong>, um dos nossos especialistas entrará em contato diretamente para agendar a reunião com você.</p>
   </section>
 
   <!-- Desqualificado -->
@@ -301,13 +322,42 @@
     return s.id !== "no-fit";
   });
 
-  // marca visualmente toda pergunta como obrigatória
-  steps.forEach(function (sec) {
+  // marca perguntas como obrigatórias + monta navegação (OK nas alternativas e Voltar)
+  steps.forEach(function (sec, idx) {
     if (sec.querySelector("input") || sec.querySelector(".options")) {
       var tag = document.createElement("p");
       tag.className = "required-tag";
       tag.textContent = "* Resposta obrigatória";
       sec.insertBefore(tag, sec.firstElementChild);
+    }
+
+    // perguntas de alternativa ganham botão OK: confirma com clique/Enter, igual às abertas
+    if (sec.querySelector(".options") && !sec.querySelector(".nav")) {
+      var nav = document.createElement("div");
+      nav.className = "nav";
+      var ok = document.createElement("button");
+      ok.className = "btn";
+      ok.setAttribute("data-next", "");
+      ok.textContent = "OK";
+      ok.disabled = true;
+      var hint = document.createElement("span");
+      hint.className = "enter-hint";
+      hint.innerHTML = "pressione Enter ↵";
+      nav.appendChild(ok);
+      nav.appendChild(hint);
+      sec.appendChild(nav);
+    }
+
+    // botão "Voltar" em toda etapa intermediária (menos boas-vindas e telas finais)
+    if (idx > 0 && idx < steps.length - 1) {
+      var navEl = sec.querySelector(".nav");
+      if (navEl && !navEl.querySelector("[data-back]")) {
+        var back = document.createElement("button");
+        back.className = "btn btn--ghost";
+        back.setAttribute("data-back", "");
+        back.innerHTML = "← Voltar";
+        navEl.insertBefore(back, navEl.firstChild);
+      }
     }
   });
   var noFit = document.getElementById("no-fit");
@@ -315,13 +365,19 @@
   var current = 0;
   var answers = {};
 
+  // primeira letra sempre maiúscula, mesmo se a pessoa digitar em minúsculo
+  function capitalizeName(s) {
+    s = (s || "").trim();
+    return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+  }
+
   function show(i) {
     steps[current].classList.remove("active");
     current = i;
     steps[current].classList.add("active");
     bar.style.width = (current / (steps.length - 1) * 100) + "%";
     // personaliza perguntas com o nome
-    var nome = (answers["Nome"] || "").split(" ")[0];
+    var nome = capitalizeName((answers["Nome"] || "").split(" ")[0]);
     steps[current].querySelectorAll("[data-name]").forEach(function (el) { el.textContent = nome; });
     if (current === steps.length - 1) {
       if (nome) document.getElementById("done-title").textContent = "Obrigado, " + nome + "!";
@@ -368,7 +424,10 @@
   function validate() {
     var sec = steps[current];
     var input = sec.querySelector("input");
-    if (!input) return true;
+    if (!input) {
+      if (sec.querySelector(".options")) return !!sec.querySelector(".opt.selected");
+      return true;
+    }
     if (input.id === "nome") {
       var ok = input.value.trim().length >= 2;
       stepError(sec, !ok);
@@ -391,9 +450,29 @@
     return true;
   }
 
+  // avança tratando o caso de desqualificação
+  function advance() {
+    var sec = steps[current];
+    var sel = sec.querySelector(".opt.selected");
+    if (sel && sel.hasAttribute("data-disqualify")) {
+      sec.classList.remove("active");
+      noFit.hidden = false;
+      noFit.classList.add("active");
+      bar.style.width = "100%";
+      return;
+    }
+    show(current + 1);
+  }
+
   document.addEventListener("click", function (e) {
+    if (e.target.closest("[data-back]")) {
+      if (current > 0) show(current - 1);
+      return;
+    }
+
     if (e.target.closest("[data-next]")) {
-      if (validate()) show(current + 1);
+      if (validate()) advance();
+      return;
     }
 
     var opt = e.target.closest(".opt");
@@ -402,16 +481,9 @@
       step.querySelectorAll(".opt").forEach(function (o) { o.classList.remove("selected"); });
       opt.classList.add("selected");
       answers[step.getAttribute("data-question")] = opt.textContent.replace(/^[A-E]/, "").trim();
-      if (opt.hasAttribute("data-disqualify")) {
-        setTimeout(function () {
-          steps[current].classList.remove("active");
-          noFit.hidden = false;
-          noFit.classList.add("active");
-          bar.style.width = "100%";
-        }, 250);
-        return;
-      }
-      setTimeout(function () { show(current + 1); }, 250);
+      // habilita o OK — a pessoa confirma com clique ou Enter (não avança sozinho)
+      var okBtn = step.querySelector("[data-next]");
+      if (okBtn) okBtn.disabled = false;
     }
   });
 
@@ -420,7 +492,7 @@
       var sec = steps[current];
       if (sec.querySelector("[data-next]")) {
         e.preventDefault();
-        if (validate()) show(current + 1);
+        if (validate()) advance();
       }
     }
   });
