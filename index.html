@@ -301,10 +301,42 @@
 
 <script>
   // ============ CONFIGURAÇÃO ============
-  // Webhook (Make/Zapier/Supabase) que RECEBE os leads ao final do formulário.
-  // OBRIGATÓRIO configurar antes de rodar tráfego — sem isso os leads NÃO são registrados.
-  var WEBHOOK_URL = "";
+  var LEAD_ENDPOINT = "/api/lead";   // backend serverless (Vercel): grava + WhatsApp + Meta
+  var META_PIXEL_ID = "";            // seu Pixel do Meta, ex.: "123456789012345"
   // ======================================
+
+  // faixas que contam como LEAD QUALIFICADO (30k+)
+  var QUALIFYING = ["De R$30 mil a R$60 mil", "De R$60 mil a R$100 mil", "Acima de R$100 mil"];
+  function valueForFaturamento(f) {
+    return { "De R$30 mil a R$60 mil": 45000, "De R$60 mil a R$100 mil": 80000, "Acima de R$100 mil": 120000 }[f] || 0;
+  }
+  function getCookie(name) {
+    var m = document.cookie.match("(^|;)\\s*" + name + "\\s*=\\s*([^;]+)");
+    return m ? m.pop() : "";
+  }
+  function getUTMs() {
+    var p = new URLSearchParams(location.search), o = {};
+    ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"].forEach(function (k) {
+      if (p.get(k)) o[k] = p.get(k);
+    });
+    return o;
+  }
+  function newEventId() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return "ev-" + Date.now() + "-" + Math.random().toString(16).slice(2);
+  }
+
+  // Meta Pixel base (PageView em toda visita)
+  (function initPixel() {
+    if (!META_PIXEL_ID) return;
+    !function (f, b, e, v, n, t, s) {
+      if (f.fbq) return; n = f.fbq = function () { n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments); };
+      if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = "2.0"; n.queue = [];
+      t = b.createElement(e); t.async = !0; t.src = v; s = b.getElementsByTagName(e)[0]; s.parentNode.insertBefore(t, s);
+    }(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js");
+    fbq("init", META_PIXEL_ID);
+    fbq("track", "PageView");
+  })();
 
   // Perguntas de qualificação [data-random] em ordem aleatória a cada visita.
   (function shuffleQuestions() {
@@ -497,7 +529,7 @@
     }
   });
 
-  // ao chegar na tela de obrigado, registra o lead no webhook automaticamente
+  // ao chegar na tela de obrigado: grava o lead, dispara WhatsApp e evento do Meta
   var leadSent = false;
   function submitLead() {
     if (leadSent) return;
@@ -520,14 +552,43 @@
       }
     }
     leadSent = true;
-    if (WEBHOOK_URL) {
-      try {
-        fetch(WEBHOOK_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(answers)
-        });
-      } catch (err) { /* webhook é best-effort */ }
+
+    var faturamento = answers["Faturamento mensal"] || "";
+    var qualificado = QUALIFYING.indexOf(faturamento) !== -1;
+    var eventId = newEventId();
+
+    // Pixel do Meta — dispara SÓ para lead qualificado (30k+),
+    // com eventID para deduplicar com o evento do servidor (CAPI)
+    if (qualificado && window.fbq) {
+      fbq("trackCustom", "LeadQualificado",
+        { value: valueForFaturamento(faturamento), currency: "BRL", faturamento: faturamento },
+        { eventID: eventId });
     }
+
+    // dados de rastreio p/ casar com o Meta (Conversions API) no servidor
+    var fbclid = new URLSearchParams(location.search).get("fbclid");
+    var fbc = getCookie("_fbc") || (fbclid ? "fb.1." + Date.now() + "." + fbclid : "");
+
+    var payload = {
+      answers: answers,
+      meta: {
+        event_id: eventId,
+        qualificado: qualificado,
+        fbp: getCookie("_fbp"),
+        fbc: fbc,
+        event_source_url: location.href,
+        user_agent: navigator.userAgent,
+        utm: getUTMs()
+      }
+    };
+
+    try {
+      fetch(LEAD_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        keepalive: true
+      });
+    } catch (err) { /* best-effort — não trava a tela de obrigado */ }
   }
 </script>

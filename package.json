@@ -1,0 +1,9 @@
+{
+  "name": "lustro-form",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Formulário de qualificação Lustro + backend serverless (Supabase, Evolution, Meta CAPI)",
+  "engines": {
+    "node": ">=18"
+  }
+}
